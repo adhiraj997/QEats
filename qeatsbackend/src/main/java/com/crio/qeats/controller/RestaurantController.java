@@ -13,7 +13,10 @@ import java.time.LocalTime;
 import javax.validation.Valid;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
+import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -26,6 +29,8 @@ import org.springframework.web.bind.annotation.RestController;
 // Implement Controller using Spring annotations.
 // Remember, annotations have various "targets". They can be class level, method level or others.
 
+@Controller
+@Log4j2
 public class RestaurantController {
 
   public static final String RESTAURANT_API_ENDPOINT = "/qeats/v1";
@@ -42,20 +47,21 @@ public class RestaurantController {
 
 
 
-  @GetMapping(RESTAURANTS_API)
+  @GetMapping(RESTAURANT_API_ENDPOINT + RESTAURANTS_API)
   public ResponseEntity<GetRestaurantsResponse> getRestaurants(
        GetRestaurantsRequest getRestaurantsRequest) {
 
     log.info("getRestaurants called with {}", getRestaurantsRequest);
-    GetRestaurantsResponse getRestaurantsResponse;
+    GetRestaurantsResponse getRestaurantsResponse = null;
 
-      //CHECKSTYLE:OFF
-      getRestaurantsResponse = restaurantService
-          .findAllRestaurantsCloseBy(getRestaurantsRequest, LocalTime.now());
-      log.info("getRestaurants returned {}", getRestaurantsResponse);
-      //CHECKSTYLE:ON
+    //CHECKSTYLE:OFF
+    getRestaurantsResponse = restaurantService
+        .findAllRestaurantsCloseBy(getRestaurantsRequest, LocalTime.now());
+    log.info("getRestaurants returned {}", getRestaurantsResponse);
+    //CHECKSTYLE:ON
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(getRestaurantsResponse);
 
-    return ResponseEntity.ok().body(getRestaurantsResponse);
+    //return ResponseEntity.ok().body(getRestaurantsResponse);
   }
 
   // TIP(MODULE_MENUAPI): Model Implementation for getting menu given a restaurantId.

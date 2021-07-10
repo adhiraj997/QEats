@@ -50,6 +50,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class GetRestaurantsResponse {
 
+  private List<Restaurant> restaurants;
+
 }
 
 // }

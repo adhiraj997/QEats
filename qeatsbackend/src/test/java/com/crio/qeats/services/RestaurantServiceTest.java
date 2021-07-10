@@ -85,6 +85,30 @@ class RestaurantServiceTest {
     return servingRadiusInKms.getValue().toString();
   }
 
+
+  private String getServingRadiusIn5Kms(List<Restaurant> restaurants, LocalTime timeOfService) {
+    when(restaurantRepositoryServiceMock
+        .findAllRestaurantsCloseBy(any(Double.class), any(Double.class), any(LocalTime.class),
+            any(Double.class)))
+        .thenReturn(restaurants);
+
+    GetRestaurantsResponse allRestaurantsCloseBy = restaurantService
+        .findAllRestaurantsCloseBy(new GetRestaurantsRequest(20.0, 30.0),
+            timeOfService); //LocalTime.of(19,00));
+
+    assertEquals(3, allRestaurantsCloseBy.getRestaurants().size());
+    assertEquals("10", allRestaurantsCloseBy.getRestaurants().get(0).getRestaurantId());
+    assertEquals("11", allRestaurantsCloseBy.getRestaurants().get(1).getRestaurantId());
+    assertEquals("12", allRestaurantsCloseBy.getRestaurants().get(2).getRestaurantId());
+
+    ArgumentCaptor<Double> servingRadiusInKms = ArgumentCaptor.forClass(Double.class);
+    verify(restaurantRepositoryServiceMock, times(1))
+        .findAllRestaurantsCloseBy(any(Double.class), any(Double.class), any(LocalTime.class),
+            servingRadiusInKms.capture());
+
+    return servingRadiusInKms.getValue().toString();
+  }
+
   @Test
   void peakHourServingRadiusOf3KmsAt7Pm() throws IOException {
     assertEquals(getServingRadius(loadRestaurantsDuringPeakHours(), LocalTime.of(19, 0)), "3.0");
@@ -102,7 +126,8 @@ class RestaurantServiceTest {
     // HINT: Use the `loadRestaurantsDuringNormalHours` utility method to speed things up
 
 
-     assertFalse(false);
+    assertEquals(getServingRadiusIn5Kms(loadRestaurantsDuringNormalHours(), 
+        LocalTime.of(11, 0)), "5.0");
   }
 
 
