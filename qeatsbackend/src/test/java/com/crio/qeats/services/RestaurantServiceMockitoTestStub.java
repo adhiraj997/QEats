@@ -14,6 +14,7 @@ import com.crio.qeats.exchanges.GetRestaurantsRequest;
 import com.crio.qeats.exchanges.GetRestaurantsResponse;
 import com.crio.qeats.repositoryservices.RestaurantRepositoryService;
 import com.crio.qeats.utils.FixtureHelpers;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.time.LocalTime;
@@ -25,7 +26,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.boot.test.mock.mockito.MockBean;
 
 @ExtendWith(MockitoExtension.class)
 public class RestaurantServiceMockitoTestStub {
@@ -40,10 +43,20 @@ public class RestaurantServiceMockitoTestStub {
   protected Restaurant restaurant4;
   protected Restaurant restaurant5;
 
+  @InjectMocks
   protected RestaurantServiceImpl restaurantService;
 
+  @Mock
   protected RestaurantRepositoryService restaurantRepositoryServiceMock;
 
+  //added
+  @BeforeEach
+  void setup() {
+    MockitoAnnotations.initMocks(this);
+
+  }
+
+  @BeforeEach
   public void initializeRestaurantObjects() throws IOException {
     String fixture =
         FixtureHelpers.fixture(FIXTURES + "/mocking_list_of_restaurants.json");
@@ -52,6 +65,14 @@ public class RestaurantServiceMockitoTestStub {
     //  What to do with this Restaurant[] ? Looks unused?
     //  Look for the "assert" statements in the tests
     //  following and find out what to do with the array.
+
+    //added
+    restaurant1 = restaurants[0];
+    restaurant2 = restaurants[1];
+    restaurant3 = restaurants[2];
+    restaurant4 = restaurants[3];
+    restaurant5 = restaurants[4];
+
   }
 
 
@@ -64,10 +85,10 @@ public class RestaurantServiceMockitoTestStub {
     // Notes - You can create additional mocks, setup the same and try out.
 
 
-     when(restaurantRepositoryServiceMock
+    when(restaurantRepositoryServiceMock
             .findAllRestaurantsCloseBy(any(Double.class), any(Double.class),
                 eq(LocalTime.of(3, 0)),
-                eq(1.0)))
+                eq(5.0)))
             .thenReturn(Arrays.asList(restaurant1, restaurant2));
     GetRestaurantsResponse allRestaurantsCloseBy = restaurantService
         .findAllRestaurantsCloseBy(new GetRestaurantsRequest(20.0, 30.0),
@@ -95,6 +116,9 @@ public class RestaurantServiceMockitoTestStub {
     //  Initialize these two lists above such that I will match with the assert statements
     //  defined below.
 
+    //added
+    restaurantList1 = Arrays.asList(restaurant1, restaurant4);
+    restaurantList2 = Arrays.asList(restaurant2, restaurant4);
 
     lenient().doReturn(restaurantList1)
         .when(restaurantRepositoryServiceMock)
@@ -115,6 +139,14 @@ public class RestaurantServiceMockitoTestStub {
     //  Our assessment will verify whether these mocks are called as per the definition.
     //  Refer to the assertions below in order to understand the requirements better.
 
+    //added
+    allRestaurantsCloseByOffPeakHours = restaurantService
+        .findAllRestaurantsCloseBy(new GetRestaurantsRequest(20.0, 30.2),
+            LocalTime.of(3, 0));
+
+    allRestaurantsCloseByPeakHours = restaurantService
+        .findAllRestaurantsCloseBy(new GetRestaurantsRequest(21.0, 31.1),
+            LocalTime.of(19, 0));
 
     assertEquals(2, allRestaurantsCloseByOffPeakHours.getRestaurants().size());
     assertEquals("11", allRestaurantsCloseByOffPeakHours.getRestaurants().get(0).getRestaurantId());
@@ -125,6 +157,22 @@ public class RestaurantServiceMockitoTestStub {
     assertEquals("12", allRestaurantsCloseByPeakHours.getRestaurants().get(0).getRestaurantId());
     assertEquals("14", allRestaurantsCloseByPeakHours.getRestaurants().get(1).getRestaurantId());
   }
+
+  // private List<Restaurant> loadRestaurantsDuringNormalHours() throws IOException {
+  //   String fixture =
+  //       FixtureHelpers.fixture(FIXTURES + "/normal_hours_list_of_restaurants.json");
+
+  //   return objectMapper.readValue(fixture, new TypeReference<List<Restaurant>>() {
+  //   });
+  // }
+
+  // private List<Restaurant> loadRestaurantsDuringPeakHours() throws IOException {
+  //   String fixture =
+  //       FixtureHelpers.fixture(FIXTURES + "/peak_hours_list_of_restaurants.json");
+
+  //   return objectMapper.readValue(fixture, new TypeReference<List<Restaurant>>() {
+  //   });
+  // }
 
 }
 
