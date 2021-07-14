@@ -96,6 +96,16 @@ public class RestaurantController {
   //          : 5xx, if server side error.
   // Eg:
   // curl -X GET "http://localhost:8081/qeats/v1/menu?restaurantId=11"
+  
+  //   GetRestaurantsResponse getRestaurantsResponse;
+
+  //     getRestaurantsResponse = restaurantService
+  //         .findAllRestaurantsCloseBy(getRestaurantsRequest, LocalTime.now());
+  //     log.info("getRestaurants returned {}", getRestaurantsResponse);
+
+  //   return ResponseEntity.ok().body(getRestaurantsResponse);
+  // }
+
 
 
 
