@@ -47,6 +47,9 @@ public class RestaurantRepositoryServiceImpl implements RestaurantRepositoryServ
   private MongoTemplate mongoTemplate;
 
   @Autowired
+  private RestaurantRepository restaurantRepository;
+
+  @Autowired
   private Provider<ModelMapper> modelMapperProvider;
 
   private boolean isOpenNow(LocalTime time, RestaurantEntity res) {
@@ -61,23 +64,46 @@ public class RestaurantRepositoryServiceImpl implements RestaurantRepositoryServ
   // 1. Implement findAllRestaurantsCloseby.
   // 2. Remember to keep the precision of GeoHash in mind while using it as a key.
   // Check RestaurantRepositoryService.java file for the interface contract.
+
+  @Override
   public List<Restaurant> findAllRestaurantsCloseBy(Double latitude,
       Double longitude, LocalTime currentTime, Double servingRadiusInKms) {
 
-    List<Restaurant> restaurants = null;
+    ModelMapper modelMapper = new ModelMapper();
+
+    List<RestaurantEntity> restaurantEntityList = restaurantRepository.findAll();
+    List<Restaurant> restaurantList = new ArrayList<>();
+
+    for (RestaurantEntity restaurantEntity : restaurantEntityList) {
+      // Double resLatitude = restaurantEntity.getLatitude();
+      // Double resLongitude = restaurantEntity.getLongitude();
+
+      if (isRestaurantCloseByAndOpen(restaurantEntity, currentTime,
+          latitude, longitude, servingRadiusInKms)) {
+
+        // Restaurant restaurant = new Restaurant(restaurantEntity.getId()
+        //     , restaurantEntity.getRestaurantId()
+        //         , restaurantEntity.getName(), restaurantEntity.getCity()
+        //             , restaurantEntity.getImageUrl(), resLatitude
+        //                 , resLongitude, restaurantEntity.getOpensAt()
+        //                     , restaurantEntity.getClosesAt()
+        //                         , restaurantEntity.getAttributes());
+
+        restaurantList.add(modelMapper.map(restaurantEntity, Restaurant.class));
+        
+        
+                            
+      }
+
+    }
 
 
-      //CHECKSTYLE:OFF
-      //CHECKSTYLE:ON
+    //CHECKSTYLE:OFF
+    //CHECKSTYLE:ON
 
 
-    return restaurants;
+    return restaurantList;
   }
-
-
-
-
-
 
 
 
