@@ -69,30 +69,28 @@ public class RestaurantRepositoryServiceImpl implements RestaurantRepositoryServ
   public List<Restaurant> findAllRestaurantsCloseBy(Double latitude,
       Double longitude, LocalTime currentTime, Double servingRadiusInKms) {
 
-    ModelMapper modelMapper = new ModelMapper();
+    ModelMapper modelMapper = modelMapperProvider.get();
 
     List<RestaurantEntity> restaurantEntityList = restaurantRepository.findAll();
+    //List<RestaurantEntity> restaurantEntityList2 = new ArrayList<>();
+    //List<RestaurantEntity> restaurantEntityList = 
+    //      mongoTemplate.findAll(RestaurantEntity.class, "restaurants");
     List<Restaurant> restaurantList = new ArrayList<>();
 
+    //Module 5 debug - change restaurant name 
     for (RestaurantEntity restaurantEntity : restaurantEntityList) {
-      // Double resLatitude = restaurantEntity.getLatitude();
-      // Double resLongitude = restaurantEntity.getLongitude();
+      String name = restaurantEntity.getName();
+      String resultName = name.replaceAll("[^\\x00-\\x7F]", "");
+      restaurantEntity.setName(resultName);
+      //restaurantEntityList2.add(modelMapper.map(restaurantEntity, RestaurantEntity.class));
+    }
 
-      if (isRestaurantCloseByAndOpen(restaurantEntity, currentTime,
-          latitude, longitude, servingRadiusInKms)) {
-
-        // Restaurant restaurant = new Restaurant(restaurantEntity.getId()
-        //     , restaurantEntity.getRestaurantId()
-        //         , restaurantEntity.getName(), restaurantEntity.getCity()
-        //             , restaurantEntity.getImageUrl(), resLatitude
-        //                 , resLongitude, restaurantEntity.getOpensAt()
-        //                     , restaurantEntity.getClosesAt()
-        //                         , restaurantEntity.getAttributes());
-
-        restaurantList.add(modelMapper.map(restaurantEntity, Restaurant.class));
-        
-        
-                            
+    for (RestaurantEntity restaurantEntity : restaurantEntityList) {
+      if (isOpenNow(currentTime, restaurantEntity)) {
+        if (isRestaurantCloseByAndOpen(restaurantEntity, currentTime,
+            latitude, longitude, servingRadiusInKms)) {
+          restaurantList.add(modelMapper.map(restaurantEntity, Restaurant.class));              
+        }
       }
 
     }
