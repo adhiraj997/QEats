@@ -78,12 +78,13 @@ public class RestaurantRepositoryServiceImpl implements RestaurantRepositoryServ
     List<Restaurant> restaurantList = new ArrayList<>();
 
     //Module 5 debug - change restaurant name 
-    for (RestaurantEntity restaurantEntity : restaurantEntityList) {
-      String name = restaurantEntity.getName();
-      String resultName = name.replaceAll("[^\\x00-\\x7F]", "a");
-      restaurantEntity.setName(resultName);
-      //restaurantEntityList2.add(modelMapper.map(restaurantEntity, RestaurantEntity.class));
-    }
+    // for (RestaurantEntity restaurantEntity : restaurantEntityList) {
+    //   String name = restaurantEntity.getName();
+    //   // changes to ASCII characters
+    //   String resultName = name.replaceAll("[^\\x00-\\x7F]", "a");
+    //   restaurantEntity.setName(resultName);
+    //   //restaurantEntityList2.add(modelMapper.map(restaurantEntity, RestaurantEntity.class));
+    // }
 
     for (RestaurantEntity restaurantEntity : restaurantEntityList) {
       if (isOpenNow(currentTime, restaurantEntity)) {

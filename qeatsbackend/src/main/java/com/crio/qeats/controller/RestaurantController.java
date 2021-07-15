@@ -10,6 +10,8 @@ import com.crio.qeats.dto.Restaurant;
 import com.crio.qeats.exchanges.GetRestaurantsRequest;
 import com.crio.qeats.exchanges.GetRestaurantsResponse;
 import com.crio.qeats.services.RestaurantService;
+
+import java.nio.charset.Charset;
 import java.time.LocalTime;
 import java.util.List;
 
@@ -74,6 +76,22 @@ public class RestaurantController {
       getRestaurantsResponse = restaurantService
           .findAllRestaurantsCloseBy(getRestaurantsRequest, LocalTime.now());
       // getRestaurantsResponse = new GetRestaurantsResponse();
+
+      List<Restaurant> restaurantList = getRestaurantsResponse.getRestaurants();
+      // for (Restaurant restaurant : restaurantList) {
+      //   String name = restaurant.getName();
+      //   Charset charset = Charset.forName("UTF-8");
+      //   name = charset.decode(charset.encode(name)).toString();
+      //   restaurant.setName(name);
+      // }
+
+      for (Restaurant restaurant : restaurantList) {
+        String name = restaurant.getName();
+        // changes to ASCII characters
+        String resultName = name.replaceAll("[^\\x00-\\x7F]", "a");
+        restaurant.setName(resultName);
+        //restaurantEntityList2.add(modelMapper.map(restaurantEntity, RestaurantEntity.class));
+      }
 
       return ResponseEntity.ok().body(getRestaurantsResponse);
     } else {
