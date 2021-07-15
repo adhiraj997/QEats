@@ -80,7 +80,7 @@ public class RestaurantRepositoryServiceImpl implements RestaurantRepositoryServ
     //Module 5 debug - change restaurant name 
     for (RestaurantEntity restaurantEntity : restaurantEntityList) {
       String name = restaurantEntity.getName();
-      String resultName = name.replaceAll("[^\\x00-\\x7F]", "");
+      String resultName = name.replaceAll("[^\\x00-\\x7F]", "a");
       restaurantEntity.setName(resultName);
       //restaurantEntityList2.add(modelMapper.map(restaurantEntity, RestaurantEntity.class));
     }
