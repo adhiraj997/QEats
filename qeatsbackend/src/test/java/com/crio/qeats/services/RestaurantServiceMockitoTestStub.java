@@ -158,21 +158,5 @@ public class RestaurantServiceMockitoTestStub {
     assertEquals("14", allRestaurantsCloseByPeakHours.getRestaurants().get(1).getRestaurantId());
   }
 
-  // private List<Restaurant> loadRestaurantsDuringNormalHours() throws IOException {
-  //   String fixture =
-  //       FixtureHelpers.fixture(FIXTURES + "/normal_hours_list_of_restaurants.json");
-
-  //   return objectMapper.readValue(fixture, new TypeReference<List<Restaurant>>() {
-  //   });
-  // }
-
-  // private List<Restaurant> loadRestaurantsDuringPeakHours() throws IOException {
-  //   String fixture =
-  //       FixtureHelpers.fixture(FIXTURES + "/peak_hours_list_of_restaurants.json");
-
-  //   return objectMapper.readValue(fixture, new TypeReference<List<Restaurant>>() {
-  //   });
-  // }
-
 }
 

@@ -66,7 +66,7 @@ class RestaurantRepositoryServiceCacheTest {
 
 
   @Test
-void restaurantsCloseByFromWarmCache(@Autowired MongoTemplate mongoTemplate) throws IOException {
+  void restaurantsCloseByFromWarmCache(@Autowired MongoTemplate mongoTemplate) throws IOException {
     assertNotNull(mongoTemplate);
     assertNotNull(restaurantRepositoryService);
 

@@ -32,7 +32,6 @@ import javax.inject.Provider;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -43,9 +42,6 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import redis.embedded.RedisServer;
 
-// TODO: CRIO_TASK_MODULE_NOSQL
-// Pass all the RestaurantRepositoryService test cases.
-// Make modifications to the tests if necessary.
 @SpringBootTest(classes = {QEatsApplication.class})
 @DirtiesContext
 @ActiveProfiles("test")
@@ -53,7 +49,6 @@ public class RestaurantRepositoryServiceTest {
 
   private static final String FIXTURES = "fixtures/exchanges";
   List<RestaurantEntity> allRestaurants = new ArrayList<>();
-  
   @Autowired
   private RestaurantRepositoryService restaurantRepositoryService;
   @Autowired
@@ -106,7 +101,6 @@ public class RestaurantRepositoryServiceTest {
         .findAllRestaurantsCloseBy(20.0, 30.0, LocalTime.of(18, 1), 3.0);
 
     verify(restaurantRepository, times(1)).findAll();
-    //System.out.println(allRestaurantsCloseBy.size());
     assertEquals(2, allRestaurantsCloseBy.size());
     assertEquals("11", allRestaurantsCloseBy.get(0).getRestaurantId());
     assertEquals("12", allRestaurantsCloseBy.get(1).getRestaurantId());
@@ -149,7 +143,38 @@ public class RestaurantRepositoryServiceTest {
     assertEquals(0, allRestaurantsCloseBy.size());
   }
 
+  @Test
+  void findRestaurantsByName(@Autowired MongoTemplate mongoTemplate) {
+    assertNotNull(mongoTemplate);
+    assertNotNull(restaurantRepositoryService);
 
+    doReturn(Optional.of(allRestaurants))
+        .when(restaurantRepository).findRestaurantsByNameExact(any());
+
+    String searchFor = "A2B";
+    List<Restaurant> foundRestaurantsList = restaurantRepositoryService
+        .findRestaurantsByName(20.8, 30.1, searchFor,
+            LocalTime.of(20, 0), 5.0);
+
+    assertEquals(2, foundRestaurantsList.size());
+  }
+
+  @Test
+  void foundRestaurantsExactMatchesFirst(@Autowired MongoTemplate mongoTemplate) {
+    assertNotNull(mongoTemplate);
+    assertNotNull(restaurantRepositoryService);
+
+    doReturn(Optional.of(allRestaurants))
+        .when(restaurantRepository).findRestaurantsByNameExact(any());
+    String searchFor = "A2B";
+    List<Restaurant> foundRestaurantsList = restaurantRepositoryService
+        .findRestaurantsByName(20.8, 30.1, searchFor,
+            LocalTime.of(20, 0), 5.0);
+
+    assertEquals(2, foundRestaurantsList.size());
+    assertEquals("A2B", foundRestaurantsList.get(0).getName());
+    assertEquals("A2B Adyar Ananda Bhavan", foundRestaurantsList.get(1).getName());
+  }
 
 
 
