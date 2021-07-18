@@ -6,7 +6,7 @@ import javax.annotation.PostConstruct;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
+
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -58,7 +58,11 @@ public class RedisConfiguration {
   @PostConstruct
   public void initCache() {
     JedisPoolConfig poolConfig = buildPoolConfig();
-    jedisPool = new JedisPool(poolConfig, redisHost, redisPort);
+    try {
+      jedisPool = new JedisPool(poolConfig, redisHost, redisPort);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
   }
 
 
@@ -68,11 +72,15 @@ public class RedisConfiguration {
    * @return true / false if cache is available or not.
    */
   public boolean isCacheAvailable() {
-    if (jedisPool != null) {
+    if (jedisPool == null) {
+      return false;
+    }
+    try (Jedis jedis = this.getJedisPool().getResource()) {
       return true;
+    } catch (Exception e) {
+      return false;
     }
 
-    return false;
   }
 
   /**
@@ -80,11 +88,28 @@ public class RedisConfiguration {
    * TIP: This is useful if cache is stale or while performing tests.
    */
   public void destroyCache() {
-    jedisPool.destroy();
+    if (jedisPool != null) {
+      jedisPool.getResource().flushAll();
+      jedisPool.destroy();
+      jedisPool = null;
+    }
+  }
+
+  public JedisPool getJedisPool() {
+    if (jedisPool != null) {
+      return jedisPool;
+    }
+    try {
+      JedisPoolConfig poolConfig = buildPoolConfig();
+      jedisPool = new JedisPool(poolConfig, redisHost, redisPort);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    return jedisPool;
   }
 
 
-  private JedisPoolConfig buildPoolConfig() {
+  private static JedisPoolConfig buildPoolConfig() {
     final JedisPoolConfig poolConfig = new JedisPoolConfig();
     poolConfig.setMaxTotal(128);
     poolConfig.setMaxIdle(128);

@@ -67,6 +67,21 @@ public class RestaurantRepositoryServiceImpl implements RestaurantRepositoryServ
     return time.isAfter(openingTime) && time.isBefore(closingTime);
   }
 
+  @Override
+  public List<Restaurant> findAllRestaurantsCloseBy(Double latitude,
+      Double longitude, LocalTime currentTime, Double servingRadiusInKms) {
+
+    List<Restaurant> restaurantList = null;
+    if (redisConfiguration.isCacheAvailable()) {
+      restaurantList = findAllRestaurantsCloseFromCache(
+          latitude, longitude, currentTime, servingRadiusInKms);
+    } else {
+      restaurantList = findAllRestaurantsCloseFromDb(
+          latitude, longitude, currentTime, servingRadiusInKms);
+    }
+    return restaurantList;
+  }
+
   // TODO: CRIO_TASK_MODULE_NOSQL
   // Objectives:
   // 1. Implement findAllRestaurantsCloseby.
@@ -74,19 +89,13 @@ public class RestaurantRepositoryServiceImpl implements RestaurantRepositoryServ
   // Check RestaurantRepositoryService.java file for the interface contract.
 
   //@Override
-  public List<Restaurant> findAllRestaurantsCloseByMongo(Double latitude,
+  public List<Restaurant> findAllRestaurantsCloseFromDb(Double latitude,
       Double longitude, LocalTime currentTime, Double servingRadiusInKms) {
 
     ModelMapper modelMapper = modelMapperProvider.get();
 
     List<RestaurantEntity> restaurantEntityList = restaurantRepository.findAll();
     List<Restaurant> restaurantList = new ArrayList<>();
-
-    // System.out.println(restaurantEntityList);
-    // System.out.println(latitude);
-    // System.out.println(longitude);
-    // System.out.println(currentTime);
-    // System.out.println(servingRadiusInKms);
 
     for (RestaurantEntity restaurantEntity : restaurantEntityList) {
       if (isOpenNow(currentTime, restaurantEntity)) {
@@ -107,7 +116,7 @@ public class RestaurantRepositoryServiceImpl implements RestaurantRepositoryServ
     return restaurantList;
   }
 
-  public List<Restaurant> findAllRestaurantsCloseBy(Double latitude, 
+  public List<Restaurant> findAllRestaurantsCloseFromCache(Double latitude, 
       Double longitude, LocalTime currentTime, Double servingRadiusInKms) {
 
     redisConfiguration.setRedisPort(6379);
@@ -121,70 +130,71 @@ public class RestaurantRepositoryServiceImpl implements RestaurantRepositoryServ
     // Remember, you must ensure that if cache is not present, the queries are
     // directed at the
     // database instead.
+    GeoHash geoHash = GeoHash.withCharacterPrecision(latitude, longitude, 7);
+    String geoHashKey = geoHash.toBase32();
 
     try (Jedis jedis = redisConfiguration.getJedisPool().getResource()) {
 
-      GeoHash geoHash = GeoHash.withCharacterPrecision(latitude, longitude, 7);
-      String geoHashString = geoHash.toBase32();
-
       // get value for above GeoHash string
-      String geoHashValue = jedis.get(geoHashString);
+      String geoHashValue = jedis.get(geoHashKey);
 
-      //System.out.println(geoHashValue);
-
-      List<RestaurantEntity> restaurantEntityList = new ArrayList<>();
-      if (geoHashValue != null && !geoHashValue.equals("[]")) {
-        restaurantEntityList = objectMapper.readValue(
-            geoHashValue, new TypeReference<List<RestaurantEntity>>() {
-            });
-      } else {
-        restaurantEntityList = restaurantRepository.findAll();
-        jedis.set(geoHashString, objectMapper.writeValueAsString(restaurantEntityList));
-      }
-
-      for (RestaurantEntity restaurantEntity : restaurantEntityList) {
-        if (isOpenNow(currentTime, restaurantEntity)) {
-          if (isRestaurantCloseByAndOpen(restaurantEntity, currentTime, 
-              latitude, longitude, servingRadiusInKms)) {
-            restaurantList.add(modelMapper.map(restaurantEntity, Restaurant.class));
-          }
+      //List<RestaurantEntity> restaurantEntityList = new ArrayList<>();
+      if (geoHashValue != null) {
+        try {
+          restaurantList = objectMapper.readValue(
+              geoHashValue, new TypeReference<List<Restaurant>>() {
+              });
+        } catch (IOException e) {
+          e.printStackTrace();
         }
-
+      } else {
+        try {
+          restaurantList = findAllRestaurantsCloseFromDb(
+              latitude, longitude, currentTime, servingRadiusInKms);
+          geoHashValue = objectMapper.writeValueAsString(restaurantList);
+        } catch (JsonProcessingException e) {
+          e.printStackTrace();
+        }
+        jedis.set(geoHashKey, geoHashValue);
       }
-      //jedis.flushAll();
+
+      // for (RestaurantEntity restaurantEntity : restaurantEntityList) {
+      //   if (isOpenNow(currentTime, restaurantEntity)) {
+      //     if (isRestaurantCloseByAndOpen(restaurantEntity, currentTime, 
+      //         latitude, longitude, servingRadiusInKms)) {
+      //       restaurantList.add(modelMapper.map(restaurantEntity, Restaurant.class));
+      //     }
+      //   }
+
+      // }
       return restaurantList;
     
-    // }  catch (RuntimeException e) {
-    //   System.out.println("checkpoint - 6 - something is wrong: " + e.getMessage());
-    //   throw e;
-    // } catch (Exception e) {
-    //   System.out.println("checkpoint - 7 - something is wrong");
+    
+    }
+    //catch (JedisConnectionException e) {
+    //   restaurantList = findAllRestaurantsCloseByMongo(
+    //       latitude, longitude, currentTime, servingRadiusInKms);
+    //   return restaurantList;
+    // } catch (JsonParseException e) {
+    //   // TODO Auto-generated catch block
+    //   e.printStackTrace();
+    // } catch (JsonMappingException e) {
+    //   // TODO Auto-generated catch block
+    //   e.printStackTrace();
+    // } catch (IOException e) {
+    //   // TODO Auto-generated catch block
+    //   e.printStackTrace();
+    // } catch (RuntimeException e) {
+    //   System.out.println(e.getMessage());
     //   return null;
     // }
-    } catch (JedisConnectionException e) {
-      restaurantList = findAllRestaurantsCloseByMongo(
-          latitude, longitude, currentTime, servingRadiusInKms);
-      return restaurantList;
-    } catch (JsonParseException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-    } catch (JsonMappingException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-    } catch (IOException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-    } catch (RuntimeException e) {
-      System.out.println(e.getMessage());
-      return null;
-    }
     
 
     // CHECKSTYLE:OFF
     // CHECKSTYLE:ON
 
 
-    return restaurantList;
+    //return restaurantList;
   }
 
 

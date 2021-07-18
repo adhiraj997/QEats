@@ -88,7 +88,7 @@ public class RestaurantController {
       for (Restaurant restaurant : restaurantList) {
         String name = restaurant.getName();
         // changes to ASCII characters
-        String resultName = name.replaceAll("[^\\x00-\\x7F]", "a");
+        String resultName = name.replaceAll("[^\\x00-\\x7F]", "?");
         restaurant.setName(resultName);
         //restaurantEntityList2.add(modelMapper.map(restaurantEntity, RestaurantEntity.class));
       }
