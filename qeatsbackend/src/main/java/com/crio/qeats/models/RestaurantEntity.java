@@ -50,5 +50,37 @@ public class RestaurantEntity {
   @NotNull
   private List<String> attributes = new ArrayList<>();
 
+  @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = 1;
+    result = prime * result + ((restaurantId == null) ? 0 : restaurantId.hashCode());
+    return result;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (obj == this) {
+      return true;
+    }
+    if (obj == null) {
+      return false;
+    }
+    if (!(obj instanceof RestaurantEntity)) {
+      return false;
+    }
+    RestaurantEntity other = (RestaurantEntity) obj;
+    
+    if (restaurantId == null) {
+      if (other.restaurantId != null) {
+        return false;
+      }
+    } else if (!restaurantId.equals(other.restaurantId)) {
+      return false;
+    }
+    
+    return true;
+  }
+
 }
 

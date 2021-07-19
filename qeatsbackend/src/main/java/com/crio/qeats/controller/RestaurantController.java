@@ -35,10 +35,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-// TODO: CRIO_TASK_MODULE_RESTAURANTSAPI
-// Implement Controller using Spring annotations.
-// Remember, annotations have various "targets". They can be class level, method level or others.
-
 @RestController
 @Log4j2
 @RequestMapping(RestaurantController.RESTAURANT_API_ENDPOINT)
@@ -58,7 +54,6 @@ public class RestaurantController {
 
 
   @GetMapping(RESTAURANTS_API)
-  //@ResponseStatus(HttpStatus.BAD_REQUEST)
   public ResponseEntity<GetRestaurantsResponse> getRestaurants(
       GetRestaurantsRequest getRestaurantsRequest) {
 
@@ -73,24 +68,23 @@ public class RestaurantController {
         && getRestaurantsRequest.getLatitude() <= 90
         && getRestaurantsRequest.getLongitude() >= -180
         && getRestaurantsRequest.getLongitude() <= 180) {
-      getRestaurantsResponse = restaurantService
+
+      if (getRestaurantsRequest.getSearchFor() != null) {
+        getRestaurantsResponse = restaurantService
+            .findRestaurantsBySearchQuery(getRestaurantsRequest, LocalTime.now());
+      } else {
+        getRestaurantsResponse = restaurantService
           .findAllRestaurantsCloseBy(getRestaurantsRequest, LocalTime.now());
-      // getRestaurantsResponse = new GetRestaurantsResponse();
+      }
+      if (getRestaurantsResponse != null) {
+        List<Restaurant> restaurantList = getRestaurantsResponse.getRestaurants();
 
-      List<Restaurant> restaurantList = getRestaurantsResponse.getRestaurants();
-      // for (Restaurant restaurant : restaurantList) {
-      //   String name = restaurant.getName();
-      //   Charset charset = Charset.forName("UTF-8");
-      //   name = charset.decode(charset.encode(name)).toString();
-      //   restaurant.setName(name);
-      // }
-
-      for (Restaurant restaurant : restaurantList) {
-        String name = restaurant.getName();
-        // changes to ASCII characters
-        String resultName = name.replaceAll("[^\\x00-\\x7F]", "?");
-        restaurant.setName(resultName);
-        //restaurantEntityList2.add(modelMapper.map(restaurantEntity, RestaurantEntity.class));
+        for (Restaurant restaurant : restaurantList) {
+          String name = restaurant.getName();
+          // changes to ASCII characters
+          String resultName = name.replaceAll("[^\\x00-\\x7F]", "?");
+          restaurant.setName(resultName);
+        }
       }
 
       return ResponseEntity.ok().body(getRestaurantsResponse);
@@ -145,17 +139,6 @@ public class RestaurantController {
 
   //   return ResponseEntity.ok().body(getRestaurantsResponse);
   // }
-
-
-
-
-
-
-
-
-
-
-
 
 
 }

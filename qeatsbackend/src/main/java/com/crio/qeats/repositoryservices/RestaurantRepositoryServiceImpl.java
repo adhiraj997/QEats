@@ -10,12 +10,13 @@ import ch.hsr.geohash.GeoHash;
 import com.crio.qeats.configs.RedisConfiguration;
 import com.crio.qeats.dto.Restaurant;
 import com.crio.qeats.globals.GlobalConstants;
-import com.crio.qeats.models.RestaurantEntity;
 import com.crio.qeats.models.ItemEntity;
 import com.crio.qeats.models.MenuEntity;
-import com.crio.qeats.repositories.RestaurantRepository;
+import com.crio.qeats.models.RestaurantEntity;
+
 import com.crio.qeats.repositories.ItemRepository;
 import com.crio.qeats.repositories.MenuRepository;
+import com.crio.qeats.repositories.RestaurantRepository;
 import com.crio.qeats.utils.GeoLocation;
 import com.crio.qeats.utils.GeoUtils;
 import com.fasterxml.jackson.core.JsonParseException;
@@ -30,6 +31,7 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -63,6 +65,10 @@ public class RestaurantRepositoryServiceImpl implements RestaurantRepositoryServ
 
   @Autowired
   private Provider<ModelMapper> modelMapperProvider;
+
+  //added
+  // @Autowired
+  // private ItemRepository ItemRepository;
 
   private boolean isOpenNow(LocalTime time, RestaurantEntity res) {
     LocalTime openingTime = LocalTime.parse(res.getOpensAt());
@@ -172,33 +178,30 @@ public class RestaurantRepositoryServiceImpl implements RestaurantRepositoryServ
 
       // }
       return restaurantList;
-    
-    
     }
-    //catch (JedisConnectionException e) {
-    //   restaurantList = findAllRestaurantsCloseByMongo(
-    //       latitude, longitude, currentTime, servingRadiusInKms);
-    //   return restaurantList;
-    // } catch (JsonParseException e) {
-    //   // TODO Auto-generated catch block
-    //   e.printStackTrace();
-    // } catch (JsonMappingException e) {
-    //   // TODO Auto-generated catch block
-    //   e.printStackTrace();
-    // } catch (IOException e) {
-    //   // TODO Auto-generated catch block
-    //   e.printStackTrace();
-    // } catch (RuntimeException e) {
-    //   System.out.println(e.getMessage());
-    //   return null;
-    // }
+    
+    
+  }
+  //catch (JedisConnectionException e) {
+  //   restaurantList = findAllRestaurantsCloseByMongo(
+  //       latitude, longitude, currentTime, servingRadiusInKms);
+  //   return restaurantList;
+  // } catch (JsonParseException e) {
+  //   // TODO Auto-generated catch block
+  //   e.printStackTrace();
+  // } catch (JsonMappingException e) {
+  //   // TODO Auto-generated catch block
+  //   e.printStackTrace();
+  // } catch (IOException e) {
+  //   // TODO Auto-generated catch block
+  //   e.printStackTrace();
+  // } catch (RuntimeException e) {
+  //   System.out.println(e.getMessage());
+  //   return null;
+  // }
     
 
-    // CHECKSTYLE:OFF
-    // CHECKSTYLE:ON
 
-
-    //return restaurantList;
 
   // TODO: CRIO_TASK_MODULE_RESTAURANTSEARCH
   // Objective:
@@ -207,8 +210,52 @@ public class RestaurantRepositoryServiceImpl implements RestaurantRepositoryServ
   public List<Restaurant> findRestaurantsByName(Double latitude, Double longitude,
       String searchString, LocalTime currentTime, Double servingRadiusInKms) {
 
+    ModelMapper modelMapper = modelMapperProvider.get();
+    
+    Optional<List<RestaurantEntity>> restaurantEntityListExactOptional = 
+        restaurantRepository.findRestaurantsByNameExact(searchString);
 
-     return null;
+    List<RestaurantEntity> restaurantEntityListExact = new ArrayList<>();
+    if (restaurantEntityListExactOptional.isPresent()) {
+      restaurantEntityListExact = restaurantEntityListExactOptional.get();
+    }
+    
+    System.out.println(restaurantEntityListExact);
+    
+    List<RestaurantEntity> restaurantEntityListPartial = 
+        restaurantRepository.findRestaurantsByNamePartial(searchString);
+
+    //create set to store unique values in insertion order 
+    Set<RestaurantEntity> set = new LinkedHashSet<>();
+    //add the elements of restaurantEntityListExact to the set 
+    for (RestaurantEntity restaurantEntity : restaurantEntityListExact) {
+      set.add(restaurantEntity);
+    }
+
+    //add the elements of restaurantEntityListPartial to the set 
+    for (RestaurantEntity restaurantEntity : restaurantEntityListPartial) {
+      set.add(restaurantEntity);
+    }
+
+    //create an aggregated list of RestaurantEntity from the set 
+    List<RestaurantEntity> restaurantEntityList = new ArrayList<>(set);
+
+    //create a new Restaurant list to return 
+    List<Restaurant> restaurantList = new ArrayList<>();
+
+    //check if the restaurantEntityList are close by & open, if so add them to restaurantList
+    for (RestaurantEntity restaurantEntity : restaurantEntityList) {
+      if (isRestaurantCloseByAndOpen(restaurantEntity, currentTime,
+          latitude, longitude, servingRadiusInKms)) {
+
+        restaurantList.add(modelMapper.map(restaurantEntity, Restaurant.class));
+      }
+
+    }
+
+    
+    
+    return restaurantList;
   }
 
 
@@ -220,8 +267,25 @@ public class RestaurantRepositoryServiceImpl implements RestaurantRepositoryServ
       Double latitude, Double longitude,
       String searchString, LocalTime currentTime, Double servingRadiusInKms) {
 
+    ModelMapper modelMapper = modelMapperProvider.get();
+    List<RestaurantEntity> restaurantEntityList = 
+          restaurantRepository.findRestaurantsByAttributes(searchString);
 
-     return null;
+    //create Restaurant list to return 
+    List<Restaurant> restaurantList = new ArrayList<>();
+
+    //check if the restaurantEntityList are close by & open, if so add them to restaurantList
+    for (RestaurantEntity restaurantEntity : restaurantEntityList) {
+      if (isRestaurantCloseByAndOpen(restaurantEntity, currentTime,
+          latitude, longitude, servingRadiusInKms)) {
+
+        restaurantList.add(modelMapper.map(restaurantEntity, Restaurant.class));
+      }
+
+    }
+
+
+    return restaurantList;
   }
 
 
@@ -235,9 +299,15 @@ public class RestaurantRepositoryServiceImpl implements RestaurantRepositoryServ
   public List<Restaurant> findRestaurantsByItemName(
       Double latitude, Double longitude,
       String searchString, LocalTime currentTime, Double servingRadiusInKms) {
+    
+    // List<ItemEntity> itemEntityList = 
+    //     ItemRepository.findByName(searchString);
 
+    
+    
 
-     return null;
+    return null;
+
   }
 
   // TODO: CRIO_TASK_MODULE_RESTAURANTSEARCH
@@ -247,7 +317,7 @@ public class RestaurantRepositoryServiceImpl implements RestaurantRepositoryServ
   public List<Restaurant> findRestaurantsByItemAttributes(Double latitude, Double longitude,
       String searchString, LocalTime currentTime, Double servingRadiusInKms) {
 
-     return null;
+    return null;
   }
 
 
