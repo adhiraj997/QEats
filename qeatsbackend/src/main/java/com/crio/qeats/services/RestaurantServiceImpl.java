@@ -23,11 +23,15 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import lombok.AllArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -97,36 +101,39 @@ public class RestaurantServiceImpl implements RestaurantService {
   public GetRestaurantsResponse findRestaurantsBySearchQuery(
       GetRestaurantsRequest getRestaurantsRequest, LocalTime currentTime) {
 
-    String searchString = getRestaurantsRequest.getSearchFor();
-    Double latitude = getRestaurantsRequest.getLatitude();
-    Double longitude = getRestaurantsRequest.getLongitude();
-    Double servingRadius = getServingRadius(currentTime);
+    return findRestaurantsBySearchQueryMt(getRestaurantsRequest, currentTime);
 
-    GetRestaurantsResponse getRestaurantsResponse = new GetRestaurantsResponse(new ArrayList<>());
+    // String searchString = getRestaurantsRequest.getSearchFor();
+    // Double latitude = getRestaurantsRequest.getLatitude();
+    // Double longitude = getRestaurantsRequest.getLongitude();
+    // Double servingRadius = getServingRadius(currentTime);
 
-    if (!searchString.isEmpty()) {
-      List<Restaurant> restaurantListByName = restaurantRepositoryService.findRestaurantsByName(
-          latitude, longitude, searchString, currentTime, servingRadius);
+    // GetRestaurantsResponse getRestaurantsResponse = 
+    //    new GetRestaurantsResponse(new ArrayList<>());
 
-      List<Restaurant> restaurantListByAttribute = restaurantRepositoryService
-          .findRestaurantsByAttributes(
-          latitude, longitude, searchString, currentTime, servingRadius);
+    // if (!searchString.isEmpty()) {
+    //   List<Restaurant> restaurantListByName = restaurantRepositoryService.findRestaurantsByName(
+    //       latitude, longitude, searchString, currentTime, servingRadius);
 
-      List<Restaurant> restaurantList = Stream.concat(
-          restaurantListByName.stream(), restaurantListByAttribute.stream())
-          .collect(Collectors.toList());
+    //   List<Restaurant> restaurantListByAttribute = restaurantRepositoryService
+    //       .findRestaurantsByAttributes(
+    //       latitude, longitude, searchString, currentTime, servingRadius);
 
-      Set<Restaurant> set = new LinkedHashSet<>(restaurantList);
+    //   List<Restaurant> restaurantList = Stream.concat(
+    //       restaurantListByName.stream(), restaurantListByAttribute.stream())
+    //       .collect(Collectors.toList());
 
-      //create a list again from above set 
-      List<Restaurant> restaurantListUnique = new ArrayList<>(set);
+    //   Set<Restaurant> set = new LinkedHashSet<>(restaurantList);
 
-      getRestaurantsResponse = 
-          new GetRestaurantsResponse(restaurantListUnique); 
-    }
+    //   //create a list again from above set 
+    //   List<Restaurant> restaurantListUnique = new ArrayList<>(set);
+
+    //   getRestaurantsResponse = 
+    //       new GetRestaurantsResponse(restaurantListUnique); 
+    // }
     
 
-    return getRestaurantsResponse;
+    // return getRestaurantsResponse;
   }
 
   //utility function 
@@ -154,5 +161,97 @@ public class RestaurantServiceImpl implements RestaurantService {
     return radius;
   }
 
+
+  // TODO: CRIO_TASK_MODULE_MULTITHREADING
+  // Implement multi-threaded version of RestaurantSearch.
+  // Implement variant of findRestaurantsBySearchQuery which is at least 1.5x time faster than
+  // findRestaurantsBySearchQuery.
+  @Override
+  public GetRestaurantsResponse findRestaurantsBySearchQueryMt(
+      GetRestaurantsRequest getRestaurantsRequest, LocalTime currentTime) {
+
+    GetRestaurantsResponse getRestaurantsResponse = new GetRestaurantsResponse(new ArrayList<>());
+    
+    String searchString = getRestaurantsRequest.getSearchFor();
+    Double latitude = getRestaurantsRequest.getLatitude();
+    Double longitude = getRestaurantsRequest.getLongitude();
+    Double servingRadius = getServingRadius(currentTime);
+
+    if (!searchString.isEmpty()) {
+      try {
+
+        ExecutorService executor = Executors.newFixedThreadPool(4);
+        CallableRestaurantsByName task1 = new CallableRestaurantsByName(
+            latitude, longitude, searchString, currentTime, servingRadius);
+
+        CallableRestaurantsByAttribute task2 = new CallableRestaurantsByAttribute(
+            latitude, longitude, searchString, currentTime, servingRadius);
+
+        Future<List<Restaurant>> future1 = executor.submit(task1);
+        Future<List<Restaurant>> future2 = executor.submit(task2);
+
+        List<Restaurant> restaurantListByName = future1.get();
+
+        List<Restaurant> restaurantListByAttribute = future2.get();
+
+        List<Restaurant> restaurantList = Stream.concat(
+            restaurantListByName.stream(), restaurantListByAttribute.stream())
+            .collect(Collectors.toList());
+
+        Set<Restaurant> set = new LinkedHashSet<>(restaurantList);
+
+        //create a list again from above set 
+        List<Restaurant> restaurantListUnique = new ArrayList<>(set);
+        
+        getRestaurantsResponse = new GetRestaurantsResponse(restaurantListUnique);
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      } catch (ExecutionException e) {
+        e.printStackTrace();
+      }
+      
+    }
+    
+
+    return getRestaurantsResponse;
+  }
+
+  @AllArgsConstructor
+  private class CallableRestaurantsByName implements Callable<List<Restaurant>> { 
+
+    Double latitude;
+    Double longitude;
+    String searchString;
+    LocalTime currentTime;
+    Double servingRadius;
+
+    @Override
+    public List<Restaurant> call() throws Exception {
+
+      return restaurantRepositoryService.findRestaurantsByName(
+          latitude, longitude, searchString, currentTime, servingRadius);
+
+    }
+
+  }
+
+  @AllArgsConstructor
+  private class CallableRestaurantsByAttribute implements Callable<List<Restaurant>> { 
+
+    Double latitude;
+    Double longitude;
+    String searchString;
+    LocalTime currentTime;
+    Double servingRadius;
+
+    @Override
+    public List<Restaurant> call() throws Exception {
+
+      return restaurantRepositoryService.findRestaurantsByAttributes(
+          latitude, longitude, searchString, currentTime, servingRadius);
+
+    }
+
+  }
 }
 

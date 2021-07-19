@@ -13,7 +13,6 @@ import com.crio.qeats.globals.GlobalConstants;
 import com.crio.qeats.models.ItemEntity;
 import com.crio.qeats.models.MenuEntity;
 import com.crio.qeats.models.RestaurantEntity;
-
 import com.crio.qeats.repositories.ItemRepository;
 import com.crio.qeats.repositories.MenuRepository;
 import com.crio.qeats.repositories.RestaurantRepository;
@@ -65,10 +64,6 @@ public class RestaurantRepositoryServiceImpl implements RestaurantRepositoryServ
 
   @Autowired
   private Provider<ModelMapper> modelMapperProvider;
-
-  //added
-  // @Autowired
-  // private ItemRepository ItemRepository;
 
   private boolean isOpenNow(LocalTime time, RestaurantEntity res) {
     LocalTime openingTime = LocalTime.parse(res.getOpensAt());
@@ -167,16 +162,6 @@ public class RestaurantRepositoryServiceImpl implements RestaurantRepositoryServ
         }
         jedis.set(geoHashKey, geoHashValue);
       }
-
-      // for (RestaurantEntity restaurantEntity : restaurantEntityList) {
-      //   if (isOpenNow(currentTime, restaurantEntity)) {
-      //     if (isRestaurantCloseByAndOpen(restaurantEntity, currentTime, 
-      //         latitude, longitude, servingRadiusInKms)) {
-      //       restaurantList.add(modelMapper.map(restaurantEntity, Restaurant.class));
-      //     }
-      //   }
-
-      // }
       return restaurantList;
     }
     
@@ -220,8 +205,6 @@ public class RestaurantRepositoryServiceImpl implements RestaurantRepositoryServ
       restaurantEntityListExact = restaurantEntityListExactOptional.get();
     }
     
-    System.out.println(restaurantEntityListExact);
-    
     List<RestaurantEntity> restaurantEntityListPartial = 
         restaurantRepository.findRestaurantsByNamePartial(searchString);
 
@@ -252,9 +235,6 @@ public class RestaurantRepositoryServiceImpl implements RestaurantRepositoryServ
       }
 
     }
-
-    
-    
     return restaurantList;
   }
 
@@ -283,8 +263,6 @@ public class RestaurantRepositoryServiceImpl implements RestaurantRepositoryServ
       }
 
     }
-
-
     return restaurantList;
   }
 
@@ -302,9 +280,6 @@ public class RestaurantRepositoryServiceImpl implements RestaurantRepositoryServ
     
     // List<ItemEntity> itemEntityList = 
     //     ItemRepository.findByName(searchString);
-
-    
-    
 
     return null;
 
